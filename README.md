@@ -1,0 +1,205 @@
+# SSH Model and Berry Phase Calculation
+
+This repository contains the implementation of the Su-Schrieffer-Heeger (SSH) model and Berry phase calculations for a Bachelor's Thesis (TFG) in Physics. The code implements from scratch the routines necessary to study topological properties of 1D systems through Berry phase analysis, following the discrete formulation presented by D. Vanderbilt in *Berry Phases in Electronic Structure Theory* (2018).
+
+## Project Overview
+
+The SSH model is a paradigmatic example of a 1D topological insulator, where the topological properties manifest through the Berry phase of the electronic bands. This project implements the complete workflow:
+
+1. Construction of the k-dependent Hamiltonian matrix
+2. Diagonalization along the Brillouin zone
+3. Computation of Berry phases using Vanderbilt's discrete formulation (equation 3.74)
+4. Visualization of results (band structure, h(k) trajectories, Berry phases along parameter loops)
+5. Validation against reference implementations from PythTB
+
+The main objective is to connect the geometric formulation of the SSH model (through the h(k) vector in parameter space) with the discrete Berry phase computation, demonstrating how gauge choices affect the computed phase while maintaining physical consistency.
+
+## Features
+
+### Core Functionality
+
+- **Hamiltonian Builder and Eigenvalue Solver**: Construct the SSH Hamiltonian matrix for arbitrary k-points and diagonalize it to obtain band structure
+- **Discrete Berry-Phase Computation**: Implementation of Vanderbilt's equation 3.74 for computing Berry phases from discrete k-point samplings
+- **Gauge Support**: Two gauge choices are supported:
+  - Site-centered: orbitals at (0, a/2) with phases (0, π)
+  - Midbond-centered: orbitals at (-a/4, +a/4) with phases (-π/2, +π/2)
+- **Visualization Tools**: 
+  - Energy band structure plots
+  - h(k) trajectory visualization in 2D and 3D parameter space
+  - Berry phase evolution along closed loops in (Δ, δ) parameter space
+- **Parameter Space Loops**: Utilities for generating closed loops and computing Berry phases along them
+- **Reference Validation**: Comparison with Vanderbilt's original PythTB implementation
+
+## Repository Structure
+
+```
+TFG-Fisica-Final/
+├── src/
+│   ├── model.py          # BerryBandModel class (main implementation)
+│   ├── plots.py          # Visualization utilities (bands, ellipses, Berry)
+│   └── loops.py          # Parameter-space loops and Berry-phase sweeps
+├── examples/
+│   └── demo.py           # Example script generating the main results
+├── references/
+│   ├── chain_alt_mod.py  # Adapted Vanderbilt reference (chain_alt.py + bp)
+│   ├── pythtb.py         # Original PythTB library (unmodified)
+│   └── README.md         # Notes on reference code
+├── requirements.txt      # numpy, matplotlib
+└── README.md             # This file
+```
+
+## Installation
+
+### Requirements
+
+The project requires Python 3.7+ with the following dependencies:
+
+- `numpy >= 1.20.0`
+- `matplotlib >= 3.3.0`
+
+### Setup
+
+Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+### Running the Example Script
+
+The main demonstration script generates all figures used in the thesis results section:
+
+```bash
+python -m examples.demo
+```
+
+or directly:
+
+```bash
+python examples/demo.py
+```
+
+This script performs:
+
+1. Calculation of the eigensystem for the SSH model
+2. Generation of energy band plots
+3. Visualization of the h(k) ellipse in parameter space
+4. Creation of a closed loop in (Δ, δ) space
+5. Computation of Berry phases along the loop
+6. Plotting of Berry phase evolution
+
+### Customizing Parameters
+
+The `examples/demo.py` script includes a configuration section at the top where parameters can be modified:
+
+```python
+# Model parameters - modify these values as needed
+INITIAL_DELTA = 0.0        # Site energy alternation
+INITIAL_DELTA_SMALL = 0.0  # Hopping alternation
+T = -2.8                   # Average hopping
+ORBITAL_TYPE = 'midbond'   # 'midbond' or 'site'
+```
+
+### Using Individual Functions
+
+The codebase is modular and allows for custom analyses:
+
+```python
+from src.model import BerryBandModel
+from src.plots import plot_energy_bands, plot_h_ellipse_3d
+from src.loops import create_closed_loop_circle, calculate_berry_phases_for_parameters
+
+# Create model
+model = BerryBandModel(orbital_type='midbond', Delta=0.5, delta=0.3)
+
+# Calculate band structure
+k_values, eigenvalues, eigenvectors = model.compute_eigensystem(nk=200)
+plot_energy_bands(k_values, eigenvalues)
+
+# Visualize h(k) trajectory in 3D
+plot_h_ellipse_3d(model.t, model.delta, model.Delta)
+
+# Compute Berry phases along a loop
+loop = create_closed_loop_circle(center=(1, 1), radius=0.5, num_points=200)
+results = calculate_berry_phases_for_parameters(model, loop, nk=200)
+```
+
+## Reproducing Figures
+
+All figures presented in the thesis can be reproduced using the provided code:
+
+- **Energy bands**: Generated by `plot_energy_bands()` in `src/plots.py`
+- **h(k) ellipse**: Generated by `plot_h_ellipse()` in `src/plots.py` (2D) or `plot_h_ellipse_3d()` (3D)
+- **Parameter space loops**: Generated by `plot_closed_loop()` in `src/plots.py`
+- **Berry phase plots**: Generated by `plot_berry_phases()` in `src/plots.py`
+
+The main script `examples/demo.py` generates all these figures sequentially. Individual plotting functions can also be called programmatically for custom analyses.
+
+## Gauge Choices
+
+The Berry phase calculation depends on the choice of gauge, which is determined by the internal positions of the orbitals within the unit cell. This implementation supports two physically equivalent choices:
+
+- **`orbital_type='site'`**: Orbitals positioned at (0, a/2) within the unit cell. This choice applies phase factors (0, π) when closing the periodic loop.
+
+- **`orbital_type='midbond'`**: Orbitals positioned at (-a/4, +a/4) within the unit cell. This choice applies phase factors (-π/2, +π/2) when closing the periodic loop.
+
+Both choices are physically equivalent modulo 2π, but the explicit Berry phase value depends on the gauge. This reflects the periodic gauge condition:
+
+u_{n,k+G} = exp(-i G·r) u_{n,k}
+
+where G is a reciprocal lattice vector and r are the orbital positions. The implementation in `calculate_berry_phase()` in `src/model.py` follows Vanderbilt's equation 3.74, which accounts for these phase factors when closing the periodic path in k-space.
+
+## Validation
+
+The implementation has been validated against reference code from Vanderbilt's PythTB library:
+
+- **`references/chain_alt_mod.py`**: Adapted reference script that combines the SSH chain model setup with explicit Berry phase calculations. This script provides:
+  - Model construction using PythTB
+  - Explicit Berry phase computation following equation 3.74
+  - Comparison with PythTB's built-in `wf_array.berry_phase()` method
+
+- **`references/pythtb.py`**: Unmodified PythTB library code, used as ground truth for validation.
+
+The results from our custom implementation agree with the reference calculations, confirming the correctness of the discrete Berry phase formula implementation.
+
+## Implementation Details
+
+### Berry Phase Calculation
+
+The core Berry phase computation is implemented in `BerryBandModel.calculate_berry_phase()` in `src/model.py`. This function:
+
+1. Computes the product of overlaps between neighboring eigenvectors along the k-path
+2. Applies phase factors to close the periodic loop, depending on the orbital positions
+3. Returns the Berry phase as the negative argument of the total product
+
+The implementation exactly follows Vanderbilt's discrete formulation (equation 3.74), ensuring that the gauge choice is properly accounted for through the phase factors applied at the boundary.
+
+### Model Structure
+
+The SSH Hamiltonian matrix is constructed in `BerryBandModel.Hamiltonian()`:
+
+```
+H(k) = [E_p + Δ      h*(k)    ]
+       [h(k)      E_p - Δ     ]
+```
+
+where h(k) = 2t cos(ka/2) + 2iδ sin(ka/2), and E_p, Δ, t, and δ are model parameters.
+
+## Academic Context
+
+This repository contains the code developed for the Bachelor's Thesis (TFG) in Physics, focused on the topological characterization of 1D systems through Berry phases. The implementation follows and validates the formalism presented by D. Vanderbilt in *Berry Phases in Electronic Structure Theory* (Cambridge University Press, 2018).
+
+The code provides a pedagogical implementation that:
+- Clearly separates the geometric aspects (h(k) vector) from the topological aspects (Berry phase)
+- Demonstrates the gauge dependence of Berry phases in a concrete example
+- Validates computational methods against established reference implementations
+
+## References
+
+- Vanderbilt, D. (2018). *Berry Phases in Electronic Structure Theory*. Cambridge University Press.
+
+## License
+
+This code is intended for academic and educational use within the context of the Bachelor's Thesis. No commercial redistribution.
