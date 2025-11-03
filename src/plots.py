@@ -46,14 +46,15 @@ def plot_energy_bands(k_values, EiVa, title=None, ax=None, save_path=None):
         energies = [eigenvalue[i] for eigenvalue in EiVa]
         ax.plot(k_values, energies, label=f'Band {i + 1}')
     
-    ax.set_xlabel('k')
-    ax.set_ylabel('E(k)')
+    ax.set_xlabel('k', fontsize=12)
+    ax.set_ylabel('E(k)', fontsize=12)
     ax.set_xticks([-math.pi, 0, math.pi], [r'$-\pi/a$', '0', r'$\pi/a$'])
-    ax.legend()
+    ax.tick_params(axis='both', which='major', labelsize=11)
+    ax.legend(fontsize=11)
     if title is None:
-        ax.set_title('Energy Bands as a function of k')
+        ax.set_title('Energy Bands as a function of k', fontsize=13)
     else:
-        ax.set_title(title)
+        ax.set_title(title, fontsize=13)
     ax.grid(True)
     plt.tight_layout()
     
@@ -317,31 +318,39 @@ def plot_h_ellipse_3d(t, delta, Delta=0, nk=400, show_axes=True):
     ax = fig.add_subplot(111, projection='3d')
     
     # Plot the trajectory
-    ax.plot(hx, hy, hz, label=r'$\vec{h}(\theta)$', linewidth=1.5)
+    ax.plot(hx, hy, hz, color='black', label=r'$\vec{h}(k)$', linewidth=1.5)
     
     if show_axes:
-        # Draw coordinate axes at origin
-        axis_length = axis_limit * 0.8
-        ax.plot([0, axis_length], [0, 0], [0, 0], 'r-', linewidth=1.5, alpha=0.6, label=r'$h_x$ axis')
-        ax.plot([0, 0], [0, axis_length], [0, 0], 'g-', linewidth=1.5, alpha=0.6, label=r'$h_y$ axis')
-        ax.plot([0, 0], [0, 0], [0, axis_length], 'b-', linewidth=1.5, alpha=0.6, label=r'$h_z$ axis')
+        # Draw coordinate axes at origin - long and smooth in light gray
+        axis_length = axis_limit * 1.0  # Full length
+        ax.plot([-axis_limit, axis_limit], [0, 0], [0, 0], 
+                color='gray', linewidth=1.2, alpha=0.7, label=r'$h_x$ axis')
+        ax.plot([0, 0], [-axis_limit, axis_limit], [0, 0], 
+                color='gray', linewidth=1.2, alpha=0.7, label=r'$h_y$ axis')
+        ax.plot([0, 0], [0, 0], [-axis_limit, axis_limit], 
+                color='gray', linewidth=1.2, alpha=0.7, label=r'$h_z$ axis')
     
     # Set equal aspect ratio for all axes
     ax.set_xlim([-axis_limit, axis_limit])
     ax.set_ylim([-axis_limit, axis_limit])
     ax.set_zlim([-axis_limit, axis_limit])
     
-    # Set labels
-    ax.set_xlabel(r'$h_x = 2t\cos\theta$', fontsize=11)
-    ax.set_ylabel(r'$h_y = -2\delta\sin\theta$', fontsize=11)
-    ax.set_zlabel(r'$h_z = \Delta$', fontsize=11)
-    ax.set_title(r'3D Trajectory of $\vec{h}(\theta)$', fontsize=12)
+    # Set labels with larger font sizes
+    ax.set_xlabel(r'$h_x$', fontsize=13)
+    ax.set_ylabel(r'$h_y$', fontsize=13)
+    ax.set_zlabel(r'$h_z$', fontsize=13)
+    ax.set_title(r'3D Trajectory of $\vec{h}(k)$', fontsize=14)
+    
+    # Improve tick labels
+    ax.tick_params(axis='x', labelsize=11)
+    ax.tick_params(axis='y', labelsize=11)
+    ax.tick_params(axis='z', labelsize=11)
     
     # Add grid
     ax.grid(True, alpha=0.3)
     
-    # Add legend
-    ax.legend(loc='upper right')
+    # Add legend with larger font
+    ax.legend(loc='upper right', fontsize=12)
     
     plt.tight_layout()
     plt.show()
