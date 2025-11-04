@@ -8,6 +8,7 @@ space loops, and Berry phase results.
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.cm as cm
 import math
 
 
@@ -93,9 +94,23 @@ def plot_closed_loop(loop_points, title=None, ax=None, save_path=None):
     
     # Unpack the list of tuples into separate lists
     Delta_values, delta_values = zip(*loop_points)
+    Delta_values = np.array(Delta_values)
+    delta_values = np.array(delta_values)
     
-    # Plot the loop with points
-    ax.plot(Delta_values, delta_values, '-o', markersize=3, linewidth=1.5)
+    # Create indices for coloring
+    num_points = len(loop_points)
+    indices = np.arange(num_points)
+    
+    # Plot the loop line
+    ax.plot(Delta_values, delta_values, '-', color='gray', linewidth=1.5, alpha=0.5)
+    
+    # Plot points with colors based on index
+    scatter = ax.scatter(Delta_values, delta_values, c=indices, cmap='viridis', 
+                        s=30, zorder=10, edgecolors='black', linewidths=0.3)
+    
+    # Add colorbar
+    cbar = plt.colorbar(scatter, ax=ax, label='Point Index')
+    cbar.ax.tick_params(labelsize=9)
     
     # Set axis labels
     ax.set_xlabel(r'$\Delta$')
@@ -160,13 +175,21 @@ def plot_berry_phases(results, title=None, ax=None, save_path=None):
     _, _, berry_phases_band1, berry_phases_band2 = zip(*results)
     
     # Prepare index for each point
-    indices = range(len(berry_phases_band1))
+    indices = np.array(range(len(berry_phases_band1)))
+    num_points = len(indices)
     
-    # Plot for band 1
-    ax.plot(indices, berry_phases_band1, '-o', label='Band 1', color='blue', markersize=4)
+    # Plot points with colors based on index - different colormaps for each band
+    # Band 1: viridis (green-blue tones)
+    scatter1 = ax.scatter(indices, berry_phases_band1, c=indices, cmap='viridis', 
+                         s=30, label='Band 1', edgecolors='black', linewidths=0.3, zorder=10)
+    # Band 2: plasma (purple-pink tones) - similar to viridis but different hue
+    scatter2 = ax.scatter(indices, berry_phases_band2, c=indices, cmap='plasma', 
+                         s=30, label='Band 2', marker='s', edgecolors='black', 
+                         linewidths=0.3, zorder=10)
     
-    # Plot for band 2
-    ax.plot(indices, berry_phases_band2, '-o', label='Band 2', color='green', markersize=4)
+    # Add colorbar using viridis (same as loop plot)
+    cbar = plt.colorbar(scatter1, ax=ax, label='Point Index')
+    cbar.ax.tick_params(labelsize=9)
     
     ax.set_xlabel('Index of Point')
     ax.set_ylabel('Berry Phase (radians)')
@@ -351,6 +374,137 @@ def plot_h_ellipse_3d(t, delta, Delta=0, nk=400, show_axes=True):
     
     # Add legend with larger font
     ax.legend(loc='upper right', fontsize=12)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return fig, ax
+
+
+def plot_h_trajectories_3d(model, parameter_pairs, nk=200, step=1, title=None):
+    """
+    Plot 3D trajectories of h(k) vector for multiple parameter pairs.
+    
+    This function shows how the h(k) trajectory evolves in 3D space as
+    we move through different (Delta, delta) parameter pairs, typically
+    along a closed loop.
+    
+    Parameters
+    ----------
+    model : BerryBandModel
+        Instance of BerryBandModel (parameters will be updated for each pair).
+    parameter_pairs : list of tuples
+        List of (Delta, delta) pairs to plot trajectories for.
+    nk : int, optional
+        Number of k-points for each trajectory (default: 200).
+    step : int, optional
+        Plot every 'step' parameter pair (default: 1, plots all).
+        Use step > 1 to reduce number of trajectories shown.
+    title : str, optional
+        Plot title. If None, uses default title.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure object containing the 3D plot.
+    ax : matplotlib.axes.Axes
+        3D axes object.
+    """
+    # Create k values (same as plot_h_ellipse_3d)
+    theta = np.linspace(-math.pi, math.pi, nk)
+    
+    # Create 3D plot
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Get colormap for coloring trajectories based on parameter pair index
+    num_pairs = len(parameter_pairs)
+    colors = cm.viridis(np.linspace(0, 1, num_pairs))
+    
+    # Calculate max ranges for axis limits (same method as plot_h_ellipse_3d)
+    hx_max_all = []
+    hy_max_all = []
+    hz_max_all = []
+    
+    for Delta, delta in parameter_pairs:
+        model.update_parameters(Delta, delta)
+        # Use same calculation as plot_h_ellipse_3d (t, delta, Delta are parameters)
+        hx_temp = 2 * model.t * np.cos(theta)
+        hy_temp = -2 * model.delta * np.sin(theta)
+        hz_temp = np.full_like(theta, model.Delta)
+        hx_max_all.append(np.max(np.abs(hx_temp)))
+        hy_max_all.append(np.max(np.abs(hy_temp)))
+        hz_max_all.append(np.max(np.abs(hz_temp)))
+    
+    max_range = max(max(hx_max_all), max(hy_max_all), max(hz_max_all))
+    padding = max_range * 0.1 if max_range > 0 else 1.0
+    axis_limit = max_range + padding
+    
+    # Plot trajectory for each parameter pair
+    for idx, (Delta, delta) in enumerate(parameter_pairs[::step]):
+        # Update model parameters
+        model.update_parameters(Delta, delta)
+        
+        # Calculate h components (same equations as plot_h_ellipse_3d)
+        hx = 2 * model.t * np.cos(theta)
+        hy = -2 * model.delta * np.sin(theta)
+        hz = np.full_like(theta, model.Delta)
+        
+        # Plot trajectory with color based on index
+        color = colors[idx * step]
+        ax.plot(hx, hy, hz, color=color, linewidth=1.0, alpha=0.6)
+    
+    # Set equal aspect ratio for all axes
+    ax.set_xlim([-axis_limit, axis_limit])
+    ax.set_ylim([-axis_limit, axis_limit])
+    ax.set_zlim([-axis_limit, axis_limit])
+    
+    # Set labels
+    ax.set_xlabel(r'$h_x$', fontsize=13)
+    ax.set_ylabel(r'$h_y$', fontsize=13)
+    ax.set_zlabel(r'$h_z$', fontsize=13)
+    if title is None:
+        num_shown = len(parameter_pairs[::step])
+        ax.set_title(r'Evolution of $\vec{h}(k)$ trajectories' + f'\n({num_shown} parameter pairs)', fontsize=14)
+    else:
+        ax.set_title(title, fontsize=14)
+    
+    # Improve tick labels
+    ax.tick_params(axis='x', labelsize=10)
+    ax.tick_params(axis='y', labelsize=10)
+    ax.tick_params(axis='z', labelsize=10)
+    
+    # Add grid
+    ax.grid(True, alpha=0.25, linestyle='--')
+    
+    # Set background panes
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.xaxis.pane.set_edgecolor('gray')
+    ax.yaxis.pane.set_edgecolor('gray')
+    ax.zaxis.pane.set_edgecolor('gray')
+    ax.xaxis.pane.set_alpha(0.1)
+    ax.yaxis.pane.set_alpha(0.1)
+    ax.zaxis.pane.set_alpha(0.1)
+    
+    # Draw axes in light gray
+    ax.plot([-axis_limit, axis_limit], [0, 0], [0, 0], 
+            color='gray', linewidth=1.2, alpha=0.7)
+    ax.plot([0, 0], [-axis_limit, axis_limit], [0, 0], 
+            color='gray', linewidth=1.2, alpha=0.7)
+    ax.plot([0, 0], [0, 0], [-axis_limit, axis_limit], 
+            color='gray', linewidth=1.2, alpha=0.7)
+    
+    # Add colorbar for parameter pair index
+    sm = plt.cm.ScalarMappable(cmap=cm.viridis, 
+                               norm=plt.Normalize(vmin=0, vmax=num_pairs-1))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, label='Parameter Pair Index', pad=0.1)
+    cbar.ax.tick_params(labelsize=9)
+    
+    # Set viewing angle
+    ax.view_init(elev=20, azim=45)
     
     plt.tight_layout()
     plt.show()
