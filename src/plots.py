@@ -132,8 +132,6 @@ def plot_closed_loop(loop_points, title=None, ax=None, save_path=None):
     ax.axhline(0, color='black', linewidth=0.8)  # Horizontal line at y=0
     ax.axvline(0, color='black', linewidth=0.8)  # Vertical line at x=0
     
-    # Mark the origin with a black point
-    ax.scatter(0, 0, color='black', s=50, zorder=10)  # s is the size of the point
     
     plt.tight_layout()
     
@@ -193,6 +191,7 @@ def plot_berry_phases(results, title=None, ax=None, save_path=None):
     
     ax.set_xlabel('Index of Point')
     ax.set_ylabel('Berry Phase (radians)')
+    ax.set_ylim([-4, 4])  # Fixed y-axis range
     if title is None:
         ax.set_title('Berry Phase for each Band over Points')
     else:
