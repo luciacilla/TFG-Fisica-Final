@@ -21,7 +21,7 @@ import numpy as np
 import math
 
 
-def build_chain_model(t, del_t, Delta):
+def build_chain_model(t, del_t, Delta, orbital_positions):
     """
     Build a 1D SSH chain model with alternating site energies and hoppings.
     
@@ -41,7 +41,7 @@ def build_chain_model(t, del_t, Delta):
     """
     # 1D model with two orbitals per cell at positions [0.0, 0.5] (Onsite centered)
     lat = [[1.0]]
-    orb = [[0.0], [0.5]]  # Each orbital is a separate list with its coordinate
+    orb = orbital_positions  # Each orbital is a separate list with its coordinate
     my_model = tb_model(1, 1, lat, orb)
     
     # Alternating site energies (average is zero)
@@ -191,39 +191,60 @@ def berry_phase_pythtb(model, nk=200):
 
 if __name__ == "__main__":
     # Same parameters as original script
-    Delta = 0.5
+    Delta = 0
     t = -2.8
-    del_t = 0.0
+    del_t = 0
     
     # Build the model
-    model = build_chain_model(t, del_t, Delta)
-    model.display()
+    model_site = build_chain_model(t, del_t, Delta, orbital_positions=[[0.0], [0.5]])
+    model_midbond = build_chain_model(t, del_t, Delta, orbital_positions=[[-0.25], [0.25]])
+    model_site.display()
+    model_midbond.display()
     
-    print(f"number of orbitals: {model.get_num_orbitals()}")
-    print(f"reduced coordinates of orbitals in format [orbital,coordinate.]: {model.get_orb()}")
-    print(f"lattice vectors in format [vector,coordinate]: {model.get_lat()}")
-    print(f"hamiltoniano k=0: {model._gen_ham(0.5)}")
+    print(f"number of orbitals: {model_site.get_num_orbitals()}")
+    print(f"reduced coordinates of orbitals in format [orbital,coordinate.]: {model_site.get_orb()}")
+    print(f"lattice vectors in format [vector,coordinate]: {model_site.get_lat()}")
+    print(f"hamiltoniano k=0: {model_site._gen_ham(0.5)}")  
+
+    print(f"number of orbitals: {model_midbond.get_num_orbitals()}")
+    print(f"reduced coordinates of orbitals in format [orbital,coordinate.]: {model_midbond.get_orb()}")
+    print(f"lattice vectors in format [vector,coordinate]: {model_midbond.get_lat()}")
+    print(f"hamiltoniano k=0: {model_midbond._gen_ham(0.5)}")
     
     # Visualize model structure
-    (fig, ax) = model.visualize(0)
+    (fig, ax) = model_site.visualize(0)
     ax.set_title("Title goes here")
-    fig.savefig("model.pdf")
+    fig.savefig("model_site.pdf")
+    (fig, ax) = model_midbond.visualize(0)
+    ax.set_title("Title goes here")
+    fig.savefig("model_midbond.pdf")
     
     # Plot band structure
-    plot_chain_bands(model, nk=200, filename="chain_alt.pdf")
+    plot_chain_bands(model_site, nk=200, filename="chain_alt_site.pdf")
+    plot_chain_bands(model_midbond, nk=200, filename="chain_alt_midbond.pdf")
     
     # Explicit Berry phase calculation, two different gauges:
     # Band 0 with site-centered orbitals (0, a/2)
-    bp_b1_site = berry_phase_explicit(model, nk=200, orbital_positions=[0.0, 0.5], band_index=0)
-    print(f"final product band 1: {np.exp(1j * bp_b1_site)}")
+    bp_b1_site = berry_phase_explicit(model_site, nk=200, orbital_positions=[0.0, 0.5], band_index=0)
+    # print(f"final product band 1: {np.exp(1j * bp_b1_site)}")
     print("Berry phase for band 1 (site-centered) is %7.3f" % bp_b1_site)
     
     # Band 1 with ste-centered orbitals (0, a/2)
-    bp_b2_site = berry_phase_explicit(model, nk=200, orbital_positions=[0.0,0.5], band_index=1)
-    print(f"final product band 2: {np.exp(1j * bp_b2_site)}")
+    bp_b2_site = berry_phase_explicit(model_site, nk=200, orbital_positions=[0.0,0.5], band_index=1)
+    # print(f"final product band 2: {np.exp(1j * bp_b2_site)}")
     print("Berry phase for band 2 (site-centered) is %7.3f" % bp_b2_site)
     
+  # Band 0 with site-centered orbitals (0, a/2)
+    bp_b1_midbond = berry_phase_explicit(model_midbond, nk=200, orbital_positions=[-0.25, 0.25], band_index=0)
+    # print(f"final product band 1: {np.exp(1j * bp_b1_site)}")
+    print("Berry phase for band 1 (midbond-centered) is %7.3f" % bp_b1_midbond)
+    
+    # Band 1 with ste-centered orbitals (0, a/2)
+    bp_b2_midbond = berry_phase_explicit(model_midbond, nk=200, orbital_positions=[-0.25, 0.25], band_index=1)
+    # print(f"final product band 2: {np.exp(1j * bp_b2_site)}")
+    print("Berry phase for band 2 (midbond-centered) is %7.3f" % bp_b2_midbond)
+
     # PythTB wf_array method
-    bp1_wf, bp2_wf = berry_phase_pythtb(model, nk=200)
+    bp1_wf, bp2_wf = berry_phase_pythtb(model_site, nk=200)
     print("Berry phase of band 1 (wf_array) is %7.3f" % bp1_wf)
     print("Berry phase of band 2 (wf_array) is %7.3f" % bp2_wf)
