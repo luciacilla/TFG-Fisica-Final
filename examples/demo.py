@@ -18,7 +18,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from src.model import BerryBandModel
-from src.loops import create_closed_loop_circle, calculate_berry_phases_for_parameters, create_closed_loop_square
+from src.loops import create_closed_loop_circle, calculate_berry_phases_for_parameters
 from src.plots import plot_energy_bands, plot_closed_loop, plot_berry_phases, plot_h_ellipse, plot_h_ellipse_3d, plot_h_trajectories_3d, plot_key_points_h_trajectories_3d
 import matplotlib.pyplot as plt
 
