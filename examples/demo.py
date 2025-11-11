@@ -18,16 +18,16 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from src.model import BerryBandModel
-from src.loops import create_closed_loop_circle, calculate_berry_phases_for_parameters
-from src.plots import plot_energy_bands, plot_closed_loop, plot_berry_phases, plot_h_ellipse, plot_h_ellipse_3d, plot_h_trajectories_3d
+from src.loops import create_closed_loop_circle, calculate_berry_phases_for_parameters, create_closed_loop_square
+from src.plots import plot_energy_bands, plot_closed_loop, plot_berry_phases, plot_h_ellipse, plot_h_ellipse_3d, plot_h_trajectories_3d, plot_key_points_h_trajectories_3d
 import matplotlib.pyplot as plt
 
 # ============================================================================
 # Model parameters - modify these values as needed
 # ============================================================================
 # Initial values for Delta and delta (for energy bands and h(k) ellipse plots)
-INITIAL_DELTA = 0.5  # Site energy alternation
-INITIAL_DELTA_SMALL = 0.5  # Hopping alternation
+INITIAL_DELTA = -0.25  #Site energy alternation
+INITIAL_DELTA_SMALL = 0 # Hopping alternation
 
 # Model parameters
 E_P = -6.0  # Average site energy
@@ -53,6 +53,14 @@ model = BerryBandModel(E_p=E_P, Delta=INITIAL_DELTA, t=T,
 # Calculate eigensystem
 k_values, EiVa, EiVec = model.compute_eigensystem(NK)
 
+# Calculate Berry phase for initial parameters
+print("Calculating Berry phase for initial parameters...")
+print(f"  Delta = {INITIAL_DELTA}, delta = {INITIAL_DELTA_SMALL}")
+berry_phase_b1, berry_phase_b2 = model.calculate_berry_phase(EiVec, k_values)
+print(f"  Berry phase Band 1: {berry_phase_b1:.6f} ")
+print(f"  Berry phase Band 2: {berry_phase_b2:.6f} ")
+print()
+
 # Plot 1: Energy bands
 print("Plotting energy bands...")
 fig1, ax1 = plot_energy_bands(k_values, EiVa, title="Band structure")
@@ -70,24 +78,42 @@ plot_h_ellipse_3d(model.t, model.delta, model.Delta)
 print("Creating closed loop...")
 loop = create_closed_loop_circle(LOOP_CENTER, LOOP_RADIUS, NUM_LOOP_POINTS)
 
-# Plot 2: Closed loop
-print("Plotting closed loop...")
-fig2, ax2 = plot_closed_loop(loop, title=r"Closed Loop in $\Delta$-$\delta$ Space")
+# Define key points to highlight (e.g., 4 evenly spaced points)
+# These will be labeled A, B, C, D in all plots
+NUM_KEY_POINTS = 4
+key_point_indices = [i * (NUM_LOOP_POINTS // NUM_KEY_POINTS) for i in range(NUM_KEY_POINTS)]
+# Ensure indices are within valid range
+key_point_indices = [idx for idx in key_point_indices if idx < NUM_LOOP_POINTS]
+
+# Plot 2: Closed loop with key points
+print("Plotting closed loop with key points...")
+fig2, ax2 = plot_closed_loop(loop, 
+                             title=r"Closed Loop in $\Delta$-$\delta$ Space",
+                             key_point_indices=key_point_indices)
 plt.show()
+
 
 # Calculate Berry phases along the loop
 print("Calculating Berry phases along loop...")
 results = calculate_berry_phases_for_parameters(model, loop, nk=NK)
 
-# Plot 3: Berry phases
-print("Plotting Berry phases...")
-fig3, ax3 = plot_berry_phases(results, title="Berry Phase along Closed Loop")
+# Plot 3: Berry phases with key points
+print("Plotting Berry phases with key points...")
+fig3, ax3 = plot_berry_phases(results, 
+                              title="Berry Phase along Closed Loop",
+                              key_point_indices=key_point_indices)
+plt.show() 
+
+# Plot 4: Evolution of h(k) trajectories in 3D with key points
+print("Plotting evolution of h(k) trajectories in 3D with key points...")
+# Plot every 10th point to avoid overcrowding (adjust step as needed)
+fig4, ax4 = plot_h_trajectories_3d(model, loop, nk=200, step=10,
+                                   key_point_indices=key_point_indices)
 plt.show()
 
-# Plot 4: Evolution of h(k) trajectories in 3D
-print("Plotting evolution of h(k) trajectories in 3D...")
-# Plot every 10th point to avoid overcrowding (adjust step as needed)
-fig4, ax4 = plot_h_trajectories_3d(model, loop, nk=200, step=10)
+# Plot 5: h(k) trajectories in 3D for key points only (2x2 grid)
+print("Plotting h(k) trajectories in 3D for key points...")
+fig5, axes5 = plot_key_points_h_trajectories_3d(model, loop, key_point_indices, nk=200)
 plt.show()
 
 print("All plots completed!")
