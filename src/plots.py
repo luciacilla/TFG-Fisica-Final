@@ -568,11 +568,11 @@ def plot_h_trajectories_3d(model, parameter_pairs, nk=200, step=1, title=None, k
     ax.plot([0, 0], [0, 0], [-axis_limit, axis_limit], 
             color='gray', linewidth=1.2, alpha=0.7)
     
-    # Add colorbar for parameter pair index
+    # Add colorbar for parameter pair index (same size as figure)
     sm = plt.cm.ScalarMappable(cmap=cm.viridis, 
                                norm=plt.Normalize(vmin=0, vmax=num_pairs-1))
     sm.set_array([])
-    cbar = plt.colorbar(sm, ax=ax, label='Parameter Pair Index', pad=0.1)
+    cbar = plt.colorbar(sm, ax=ax, label='Parameter Pair Index', pad=0.1, shrink=0.7, aspect=20)
     cbar.ax.tick_params(labelsize=9)
     
     # Set viewing angle
