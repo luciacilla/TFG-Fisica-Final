@@ -622,8 +622,12 @@ def plot_key_points_h_trajectories_3d(model, parameter_pairs, key_point_indices,
     key_indices = key_point_indices[:num_plots]
     labels = [chr(65 + i) for i in range(num_plots)]  # A, B, C, D
     
-    # Create figure with 2x2 subplots
+    # Create figure with 2x2 subplots using GridSpec for better control
+    from matplotlib.gridspec import GridSpec
     fig = plt.figure(figsize=(16, 16))
+    # Reduce wspace to almost zero to bring columns very close together
+    gs = GridSpec(2, 2, figure=fig, hspace=0.05, wspace=0.0, 
+                  top=0.95, bottom=0.25, left=0.05, right=0.95)
     axes = []
     
     # Calculate global axis limits for consistency across all subplots
@@ -648,23 +652,55 @@ def plot_key_points_h_trajectories_3d(model, parameter_pairs, key_point_indices,
     axis_limit = max_range + padding
     
     # Create subplots and use plot_h_ellipse_3d for each
-    for i, (label, idx) in enumerate(zip(labels, key_indices)):
+    # Use indices directly in order: A=0, B=1, C=2, D=3
+    for i, label in enumerate(labels):
+        # Use index directly without rotation
+        idx = key_indices[i]
         if 0 <= idx < len(parameter_pairs):
             Delta, delta = parameter_pairs[idx]
             
-            # Create 3D subplot
-            ax = fig.add_subplot(2, 2, i + 1, projection='3d')
+            # Create 3D subplot using GridSpec
+            row = i // 2
+            col = i % 2
+            ax = fig.add_subplot(gs[row, col], projection='3d')
             axes.append(ax)
             
-            # Use plot_h_ellipse_3d with the subplot axis
-            subplot_title = f'Point {label}: Δ={Delta:.3f}, δ={delta:.3f}'
+            # Use plot_h_ellipse_3d with the subplot axis (no title)
             _, _ = plot_h_ellipse_3d(model.t, delta, Delta, nk=nk, 
-                                     show_axes=show_axes, ax=ax, title=subplot_title)
+                                     show_axes=show_axes, ax=ax, title='')
             
             # Override axis limits for consistency across all subplots
             ax.set_xlim([-axis_limit, axis_limit])
             ax.set_ylim([-axis_limit, axis_limit])
             ax.set_zlim([-axis_limit, axis_limit])
+            
+            # Remove any existing title
+            ax.set_title('')  # Clear any title
+    
+    # Manually adjust subplot positions to bring columns closer together
+    # Get current positions and reduce horizontal spacing
+    for i, ax in enumerate(axes):
+        bbox = ax.get_position()
+        row = i // 2
+        col = i % 2
+        
+        # Calculate new position: reduce width slightly and adjust x position
+        # Make subplots a bit narrower and move them closer to center
+        width = (bbox.x1 - bbox.x0) * 0.44  # Make each subplot slightly narrower
+        height = bbox.y1 - bbox.y0
+        
+        # Calculate spacing between columns (small gap, slightly larger)
+        gap = 0.03
+        total_width = 2 * width + gap
+        start_x = 0.05 + (0.9 - total_width) / 2
+        
+        if col == 0:  # Left column
+            new_x0 = start_x
+        else:  # Right column
+            new_x0 = start_x + width + gap
+        
+        new_y0 = bbox.y0
+        ax.set_position([new_x0, new_y0, width, height])
     
     # Set overall figure title
     if title is None:
@@ -672,10 +708,30 @@ def plot_key_points_h_trajectories_3d(model, parameter_pairs, key_point_indices,
     else:
         fig.suptitle(title, fontsize=14, y=0.98)
     
-    plt.tight_layout(rect=[0, 0, 1, 0.98])
-    
+    # Add titles below each subplot using actual subplot positions (bbox)
+    # This ensures titles align perfectly with their subplots
+    for i, label in enumerate(labels):
+        # Use index directly to match the subplot
+        idx = key_indices[i]
+        if 0 <= idx < len(parameter_pairs):
+            Delta, delta = parameter_pairs[idx]
+            ax = axes[i]
+            subplot_title = f'Point {label}: Δ={Delta:.3f}, δ={delta:.3f}'
+            
+            # Get the actual bbox position of the subplot in figure coordinates
+            bbox = ax.get_position()
+            # Position title below the subplot using the bbox
+            x_center = (bbox.x0 + bbox.x1) / 2  # Center x of subplot
+            y_bottom = bbox.y0  # Bottom of subplot
+            
+            # Add title below the subplot with offset to ensure visibility
+            # Use a larger offset for top row to prevent cutoff, and move all labels further down
+            row = i // 2
+            offset = 0.09 if row == 0 else 0.08
+            fig.text(x_center, y_bottom - offset, subplot_title, 
+                    fontsize=11, ha='center', va='top', transform=fig.transFigure)
     if save_path is not None:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path, dpi=150, bbox_inches='tight', pad_inches=0.1)
     
     plt.show()
     
