@@ -41,7 +41,7 @@ TFG-Fisica-Final/
 ├── examples/
 │   └── demo.py           # Example script generating the main results
 ├── references/
-│   ├── chain_alt_mod.py  # Adapted Vanderbilt reference (chain_alt.py + bp)
+│   ├── chain_alt_bp_modified.py  # Adapted Vanderbilt reference (chain_alt.py + bp)
 │   ├── pythtb.py         # Original PythTB library (unmodified)
 │   └── README.md         # Notes on reference code
 ├── requirements.txt      # numpy, matplotlib
@@ -155,7 +155,7 @@ where G is a reciprocal lattice vector and r are the orbital positions. The impl
 
 The implementation has been validated against reference code from Vanderbilt's PythTB library:
 
-- **`references/chain_alt_mod.py`**: Adapted reference script that combines the SSH chain model setup with explicit Berry phase calculations. This script provides:
+- **`references/chain_alt_bp_modified.py`**: Adapted reference script that combines the SSH chain model setup with explicit Berry phase calculations. This script provides:
   - Model construction using PythTB
   - Explicit Berry phase computation following equation 3.74
   - Comparison with PythTB's built-in `wf_array.berry_phase()` method
